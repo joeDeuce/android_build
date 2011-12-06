@@ -16,6 +16,13 @@
 #      # if supported, otherwise nothing
 #      echo $(call cc-option, -mcpu=cortex-a9, $(call cc-option, -mcpu=cortex-a8))
 #
+
+# We have to do our own version of setting TARGET_CC because we can be
+# included before TARGET_CC is set, but we may want to use cc-option and
+# friends in the same file that sets TARGET_CC...
+
+LINARO_CC := $(TARGET_TOOLS_PREFIX)gcc$(HOST_EXECUTABLE_SUFFIX)
+
 try-run = $(shell set -e; \
 	if ($(1)) >/dev/null 2>&1; then \
 		echo "$(2)"; \
@@ -24,9 +31,9 @@ try-run = $(shell set -e; \
 	fi)
 
 cc-version = $(shell echo '__GNUC__ __GNUC_MINOR__' \
-	|$(TARGET_CC) -E -xc - |tail -n1 |sed -e 's, ,,g')
+	|$(LINARO_CC) -E -xc - |tail -n1 |sed -e 's, ,,g')
 
 cc-ifversion = $(shell [ $(call cc-version) $(1) $(2) ] && echo $(3))
 
 cc-option = $(call try-run, echo -e "$(1)" \
-	|$(TARGET_CC) $(1) -c -xc /dev/null -o /dev/null,$(1),$(2))
+	|$(LINARO_CC) $(1) -c -xc /dev/null -o /dev/null,$(1),$(2))
