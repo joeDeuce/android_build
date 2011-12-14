@@ -5,6 +5,7 @@ Invoke ". build/envsetup.sh" from your shell to add the following functions to y
 - m:       Makes from the top of the tree.
 - mm:      Builds all of the modules in the current directory.
 - mmm:     Builds all of the modules in the supplied directories.
+- mka:     Builds using SCHED_BATCH on all processors.
 - cgrep:   Greps on all local C/C++ files.
 - jgrep:   Greps on all local Java files.
 - resgrep: Greps on all local res/*.xml files.
@@ -730,6 +731,17 @@ function mmm()
     else
         echo "Couldn't locate the top of the tree.  Try setting TOP."
     fi
+}
+
+function mka() {
+    case `uname -s` in
+        Darwin)
+            make -j `sysctl hw.ncpu|cut -d" " -f2` "$@"
+            ;;
+        *)
+            schedtool -B -n 1 -e ionice -n 1 make -j `cat /proc/cpuinfo | grep "^processor" | wc -l` "$@"
+            ;;
+    esac
 }
 
 function croot()
