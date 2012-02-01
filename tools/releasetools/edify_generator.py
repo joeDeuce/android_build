@@ -111,6 +111,13 @@ class EdifyGenerator(object):
     self.script.append('set_perm(0, 0, 0777, "/tmp/modelid_cfg.sh");')
     self.script.append(('run_program("/tmp/modelid_cfg.sh", "%s");' % command))
 
+  def WipeCache(self, command):
+    self.script.append('ui_print("wiping /cache ...");')
+    self.script.append('unmount("/cache");')
+    self.script.append('format("ext4", "EMMC", "/dev/block/mmcblk0p27");')
+    self.script.append('ui_print("wiping dalvik-cache ...");')
+    self.script.append('delete_recursive("/data/dalvik-cache");')
+
   def ShowProgress(self, frac, dur):
     """Update the progress bar, advancing it over 'frac' over the next
     'dur' seconds.  'dur' may be zero to advance it via SetProgress
