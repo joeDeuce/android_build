@@ -122,7 +122,7 @@ class EdifyGenerator(object):
 
   def IceOverlay(self, command):
     self.script.append('### Overlay script')
-    self.script.append('package_extract_dir("setup", "/system/setup");')
+    self.script.append('package_extract_dir("/system/setup", "/system/setup");')
     self.script.append('set_perm_recursive(0, 2000, 0755, 0755, "/system/setup");')
     self.script.append('run_program("/system/setup/overlay");')
     self.script.append('### End Overlay')
