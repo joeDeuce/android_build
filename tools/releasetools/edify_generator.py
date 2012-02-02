@@ -120,6 +120,13 @@ class EdifyGenerator(object):
     self.script.append('delete_recursive("/data/dalvik-cache");')
     self.script.append('unmount("/data");')
 
+  def IceOverlay(self, command):
+    self.script.append('### Overlay script')
+    self.script.append('package_extract_dir("setup", "/system/setup");')
+    self.script.append('set_perm_recursive(0, 2000, 0755, 0755, "/system/setup");')
+    self.script.append('run_program("/system/setup/overlay");')
+    self.script.append('### End Overlay')
+
   def ShowProgress(self, frac, dur):
     """Update the progress bar, advancing it over 'frac' over the next
     'dur' seconds.  'dur' may be zero to advance it via SetProgress
