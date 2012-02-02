@@ -113,11 +113,12 @@ class EdifyGenerator(object):
 
   def WipeCache(self, command):
     self.script.append('ui_print("wiping /cache ...");')
-    self.script.append('mount("ext4", "EMMC", "/dev/block/mmcblk0p26", "/data");')
     self.script.append('unmount("/cache");')
-    self.script.append('format("ext4", "EMMC", "/dev/block/mmcblk0p27");')
+    self.script.append('format("ext4", "EMMC", "/dev/block/mmcblk0p27", "0");')
     self.script.append('ui_print("wiping dalvik-cache ...");')
+    self.script.append('mount("ext4", "EMMC", "/dev/block/mmcblk0p26", "/data");')
     self.script.append('delete_recursive("/data/dalvik-cache");')
+    self.script.append('unmount("/data");')
 
   def ShowProgress(self, frac, dur):
     """Update the progress bar, advancing it over 'frac' over the next
