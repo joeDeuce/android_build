@@ -137,7 +137,7 @@ class EdifyGenerator(object):
     self.script.append('ui_print("                 By Lord ClockaN                ");')
     self.script.append('ui_print("                    AOSP ICS                    ");')
     self.script.append('ui_print("                                                ");')
-    self.script.append('ui_print("	    Thanks to great community!!!	  ");')
+    self.script.append('ui_print("           Thanks to great community!!!	  ");')
     self.script.append('ui_print("                                                ");')
     self.script.append('ui_print("************************************************");')
     self.script.append('ui_print("************************************************");')
