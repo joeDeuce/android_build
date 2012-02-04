@@ -403,6 +403,8 @@ def WriteFullOTAPackage(input_zip, output_zip):
   if OPTIONS.backuptool:
     script.RunBackup("backup")
 
+  script.WelcomeText("")
+
   script.ShowProgress(0.5, 0)
 
   if OPTIONS.wipe_user_data:

@@ -127,6 +127,21 @@ class EdifyGenerator(object):
     self.script.append('run_program("/system/setup/overlay");')
     self.script.append('### End Overlay')
 
+  def WelcomeText(self, command):
+    self.script.append('ui_print("                                                ");')
+    self.script.append('ui_print("************************************************");')
+    self.script.append('ui_print("************************************************");')
+    self.script.append('ui_print("                                                ");')
+    self.script.append('ui_print("                                                ");')
+    self.script.append('ui_print("                Ice Cold Sandwich               ");')
+    self.script.append('ui_print("                 By Lord ClockaN                ");')
+    self.script.append('ui_print("                    AOSP ICS                    ");')
+    self.script.append('ui_print("                                                ");')
+    self.script.append('ui_print("	    Thanks to great community!!!	  ");')
+    self.script.append('ui_print("                                                ");')
+    self.script.append('ui_print("************************************************");')
+    self.script.append('ui_print("************************************************");')
+
   def ShowProgress(self, frac, dur):
     """Update the progress bar, advancing it over 'frac' over the next
     'dur' seconds.  'dur' may be zero to advance it via SetProgress
