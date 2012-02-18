@@ -141,7 +141,7 @@ function setpaths()
     fi
 
     export ARM_EABI_TOOLCHAIN=
-    toolchaindir=toolchain/arm-eabi-4.4.3/bin
+    toolchaindir=toolchain/arm-eabi-4.6.3/bin
     if [ -d "$prebuiltdir/$toolchaindir" ]; then
         export ARM_EABI_TOOLCHAIN=$prebuiltdir/$toolchaindir
     fi
