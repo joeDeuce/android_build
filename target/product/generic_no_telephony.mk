@@ -21,17 +21,16 @@ PRODUCT_POLICY := android.policy_phone
 
 PRODUCT_PACKAGES := \
     DeskClock \
-    AlarmProvider \
     Bluetooth \
     Calculator \
     CertInstaller \
     DrmProvider \
-    Email \
-    Exchange \
+    Gallery2 \
     LatinIME \
     Launcher2 \
     Music \
     MusicFX \
+    Provision \
     Phone \
     QuickSearchBox \
     Settings \
@@ -48,7 +47,10 @@ PRODUCT_PACKAGES += \
     icu.dat
 
 PRODUCT_PACKAGES += \
-    librs_jni
+    librs_jni \
+    libvideoeditor_jni \
+    libvideoeditorplayer \
+    libvideoeditor_core
 
 PRODUCT_PACKAGES += \
     audio.primary.default \

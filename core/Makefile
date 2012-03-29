@@ -1,16 +1,5 @@
 # Put some miscellaneous rules here
 
-# Build system colors
-#
-# PFX: Prefix "target C++:" in yellow
-# INS: Module "Install:" output color (cyan for ics)
-
-ifneq ($(BUILD_WITH_COLORS),0)
-  CL_PFX="\033[33m"
-  CL_INS="\033[36m"
-  CL_RST="\033[0m"
-endif
-
 # Pick a reasonable string to use to identify files.
 ifneq "" "$(filter eng.%,$(BUILD_NUMBER))"
   # BUILD_NUMBER has a timestamp in it, which means that
@@ -34,6 +23,7 @@ unique_product_copy_files_destinations :=
 $(foreach cf,$(PRODUCT_COPY_FILES), \
     $(eval _src := $(call word-colon,1,$(cf))) \
     $(eval _dest := $(call word-colon,2,$(cf))) \
+    $(call check-product-copy-files,$(cf)) \
     $(if $(filter $(unique_product_copy_files_destinations),$(_dest)),, \
         $(eval _fulldest := $(call append-path,$(PRODUCT_OUT),$(_dest))) \
         $(eval $(call copy-one-file,$(_src),$(_fulldest))) \
@@ -156,7 +146,6 @@ $(INSTALLED_BUILD_PROP_TARGET): $(BUILDINFO_SH) $(INTERNAL_BUILD_ID_MAKEFILE) $(
 	@mkdir -p $(dir $@)
 	$(hide) TARGET_BUILD_TYPE="$(TARGET_BUILD_VARIANT)" \
 			TARGET_DEVICE="$(TARGET_DEVICE)" \
-			CM_DEVICE="$(TARGET_DEVICE)" \
 			PRODUCT_NAME="$(TARGET_PRODUCT)" \
 			PRODUCT_BRAND="$(PRODUCT_BRAND)" \
 			PRODUCT_DEFAULT_LANGUAGE="$(call default-locale-language,$(PRODUCT_LOCALES))" \
@@ -359,6 +348,7 @@ $(INSTALLED_RAMDISK_TARGET): $(MKBOOTFS) $(INTERNAL_RAMDISK_FILES) | $(MINIGZIP)
 	$(call pretty,"Target ram disk: $@")
 	$(hide) $(MKBOOTFS) $(TARGET_ROOT_OUT) | $(MINIGZIP) > $@
 
+
 ifneq ($(strip $(TARGET_NO_KERNEL)),true)
 
 # -----------------------------------------------------------------
@@ -383,11 +373,6 @@ endif
 BOARD_KERNEL_PAGESIZE := $(strip $(BOARD_KERNEL_PAGESIZE))
 ifdef BOARD_KERNEL_PAGESIZE
   INTERNAL_BOOTIMAGE_ARGS += --pagesize $(BOARD_KERNEL_PAGESIZE)
-endif
-
-BOARD_FORCE_RAMDISK_ADDRESS := $(strip $(BOARD_FORCE_RAMDISK_ADDRESS))
-ifneq ($(BOARD_FORCE_RAMDISK_ADDRESS),)
-  INTERNAL_BOOTIMAGE_ARGS += --ramdiskaddr $(BOARD_FORCE_RAMDISK_ADDRESS)
 endif
 
 INSTALLED_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/boot.img
@@ -568,7 +553,7 @@ endif
 # make the target NOTICE files depend on this particular file too, which will
 # then be in the right directory for the find in combine-notice-files to work.
 $(kernel_notice_file): \
-	    prebuilt/$(TARGET_PREBUILT_TAG)/kernel/LINUX_KERNEL_COPYING \
+	    prebuilts/qemu-kernel/arm/LINUX_KERNEL_COPYING \
 	    | $(ACP)
 	@echo Copying: $@
 	$(hide) mkdir -p $(dir $@)
@@ -655,17 +640,9 @@ INSTALLED_RECOVERYIMAGE_TARGET := $(PRODUCT_OUT)/recovery.img
 ifneq ($(TARGET_RECOVERY_INITRC),)
   recovery_initrc := $(TARGET_RECOVERY_INITRC) # Use target specific init.rc
 else
-ifeq ($(BOARD_USES_RECOVERY_CHARGEMODE),true)
-  $(error BOARD_USES_RECOVERY_CHARGEMODE is deprecated. Please see http://bit.ly/opcSJZ on how to properly implement chargemode in recovery. Or just remove the BOARD_USES_RECOVERY_CHARGEMODE if you are lazy. I will hate you though. -Koush)
-else
   recovery_initrc := $(call include-path-for, recovery)/etc/init.rc
 endif
-endif
-ifneq ($(TARGET_PREBUILT_RECOVERY_KERNEL),)
-  recovery_kernel := $(TARGET_PREBUILT_RECOVERY_KERNEL) # Use prebuilt recovery kernel
-else
-  recovery_kernel := $(INSTALLED_KERNEL_TARGET) # same as a non-recovery system
-endif
+recovery_kernel := $(INSTALLED_KERNEL_TARGET) # same as a non-recovery system
 recovery_uncompressed_ramdisk := $(PRODUCT_OUT)/ramdisk-recovery.cpio
 recovery_ramdisk := $(PRODUCT_OUT)/ramdisk-recovery.img
 recovery_build_prop := $(INSTALLED_BUILD_PROP_TARGET)
@@ -700,9 +677,7 @@ BOARD_KERNEL_PAGESIZE := $(strip $(BOARD_KERNEL_PAGESIZE))
 ifdef BOARD_KERNEL_PAGESIZE
   INTERNAL_RECOVERYIMAGE_ARGS += --pagesize $(BOARD_KERNEL_PAGESIZE)
 endif
-ifneq ($(BOARD_FORCE_RAMDISK_ADDRESS),)
-  INTERNAL_RECOVERYIMAGE_ARGS += --ramdiskaddr $(BOARD_FORCE_RAMDISK_ADDRESS)
-endif
+
 INTERNAL_RECOVERY_FILES := $(filter $(TARGET_RECOVERY_OUT)/%, \
 	$(foreach module, $(ALL_MODULES), $(ALL_MODULES.$(module).INSTALLED)) \
 	$(ALL_DEFAULT_INSTALLED_MODULES))
@@ -757,8 +732,6 @@ $(TARGET_RECOVERY_ROOT_TIMESTAMP): $(INTERNAL_RECOVERY_FILES) \
 	cp $(RECOVERY_INSTALL_OTA_KEYS) $(TARGET_RECOVERY_ROOT_OUT)/res/keys
 	cat $(INSTALLED_DEFAULT_PROP_TARGET) $(recovery_build_prop) \
 	        > $(TARGET_RECOVERY_ROOT_OUT)/default.prop
-	echo Modifying default.prop
-	sed -i 's/ro.build.date.utc=.*/ro.build.date.utc=0/g' $(TARGET_RECOVERY_ROOT_OUT)/default.prop
 	@echo ----- Made recovery filesystem -------- $(TARGET_RECOVERY_ROOT_OUT)
 	@touch $(TARGET_RECOVERY_ROOT_TIMESTAMP)
 
@@ -788,14 +761,6 @@ endif
 
 .PHONY: recoveryimage
 recoveryimage: $(INSTALLED_RECOVERYIMAGE_TARGET)
-
-INSTALLED_RECOVERYZIP_TARGET := $(PRODUCT_OUT)/utilities/update.zip
-$(INSTALLED_RECOVERYZIP_TARGET): $(INSTALLED_RECOVERYIMAGE_TARGET) $(TARGET_OUT)/bin/updater $(HOST_OUT_JAVA_LIBRARIES)/signapk.jar
-	@echo ----- Making recovery zip -----
-	./build/tools/device/mkrecoveryzip.sh $(PRODUCT_OUT) $(HOST_OUT_JAVA_LIBRARIES)/signapk.jar
-
-.PHONY: recoveryzip
-recoveryzip: $(INSTALLED_RECOVERYZIP_TARGET)
 
 ifneq ($(BOARD_NAND_PAGE_SIZE),)
 mkyaffs2_extra_flags := -c $(BOARD_NAND_PAGE_SIZE)
@@ -883,11 +848,7 @@ SYSTEMIMAGE_SOURCE_DIR := $(TARGET_OUT)
 # image size check calculation.
 ifneq ($(INSTALLED_RECOVERYIMAGE_TARGET),)
 intermediates := $(call intermediates-dir-for,PACKAGING,recovery_patch)
-ifndef BOARD_CUSTOM_BOOTIMG_MK
 RECOVERY_FROM_BOOT_PATCH := $(intermediates)/recovery_from_boot.p
-else
-RECOVERY_FROM_BOOT_PATCH :=
-endif
 $(RECOVERY_FROM_BOOT_PATCH): $(INSTALLED_RECOVERYIMAGE_TARGET) \
                              $(INSTALLED_BOOTIMAGE_TARGET) \
 			     $(HOST_OUT_EXECUTABLES)/imgdiff \
@@ -1141,20 +1102,12 @@ endif
 ifdef BOARD_KERNEL_PAGESIZE
 	$(hide) echo "$(BOARD_KERNEL_PAGESIZE)" > $(zip_root)/RECOVERY/pagesize
 endif
-
 	@# Components of the boot image
 	$(hide) mkdir -p $(zip_root)/BOOT
 	$(hide) $(call package_files-copy-root, \
 		$(TARGET_ROOT_OUT),$(zip_root)/BOOT/RAMDISK)
 ifdef INSTALLED_KERNEL_TARGET
 	$(hide) $(ACP) $(INSTALLED_KERNEL_TARGET) $(zip_root)/BOOT/kernel
-endif
-ifdef INSTALLED_RAMDISK_TARGET
-	$(hide) $(ACP) $(INSTALLED_RAMDISK_TARGET) $(zip_root)/BOOT/ramdisk.img
-endif
-ifdef INSTALLED_BOOTLOADER_MODULE
-	$(hide) $(ACP) \
-		$(INSTALLED_BOOTLOADER_MODULE) $(zip_root)/BOOT/bootloader
 endif
 ifdef INSTALLED_2NDBOOTLOADER_TARGET
 	$(hide) $(ACP) \
@@ -1168,12 +1121,6 @@ ifdef BOARD_KERNEL_BASE
 endif
 ifdef BOARD_KERNEL_PAGESIZE
 	$(hide) echo "$(BOARD_KERNEL_PAGESIZE)" > $(zip_root)/BOOT/pagesize
-endif
-ifdef BOARD_FORCE_RAMDISK_ADDRESS
-	$(hide) echo "$(BOARD_FORCE_RAMDISK_ADDRESS)" > $(zip_root)/BOOT/ramdiskaddr
-endif
-ifdef ZIP_SAVE_UBOOTIMG_ARGS
-	$(hide) echo "$(ZIP_SAVE_UBOOTIMG_ARGS)" > $(zip_root)/BOOT/ubootargs
 endif
 	$(hide) $(foreach t,$(INSTALLED_RADIOIMAGE_TARGET),\
 	            mkdir -p $(zip_root)/RADIO; \
@@ -1256,18 +1203,6 @@ else
     OTA_FROM_TARGET_SCRIPT := $(TARGET_RELEASETOOL_OTA_FROM_TARGET_SCRIPT)
 endif
 
-ifneq ($(CM_BUILD),)
-    $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := true
-else
-    $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
-endif
-
-ifneq ($(NAM_VARIANT),)
-    $(INTERNAL_OTA_PACKAGE_TARGET): modelidcfg := true
-else
-    $(INTERNAL_OTA_PACKAGE_TARGET): modelidcfg := false
-endif
-
 ifeq ($(TARGET_OTA_ASSERT_DEVICE),)
     $(INTERNAL_OTA_PACKAGE_TARGET): override_device := auto
 else
@@ -1278,21 +1213,14 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(OTATOOLS)
 	@echo "Package OTA: $@"
 	$(OTA_FROM_TARGET_SCRIPT) -v \
 	   -p $(HOST_OUT) \
-	   -k $(KEY_CERT_PAIR) \
-	   --backup=$(backuptool) \
+           -k $(KEY_CERT_PAIR) \
 	   --override_device=$(override_device) \
-	   $(BUILT_TARGET_FILES_PACKAGE) $@
+           $(BUILT_TARGET_FILES_PACKAGE) $@
 
-.PHONY: otapackage bacon
+.PHONY: otapackage lord
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
-bacon: otapackage lord
-ifneq ($(TARGET_CUSTOM_RELEASETOOL),)
-	@echo "Running releasetool"
-	$(hide) $(TARGET_CUSTOM_RELEASETOOL)
-else
 lord: otapackage
 	$(hide) ./vendor/lord/tools/squisher
-endif
 
 # -----------------------------------------------------------------
 # The update package
@@ -1441,7 +1369,7 @@ dalvikfiles: $(INTERNAL_DALVIK_MODULES)
 
 INTERNAL_EMULATOR_PACKAGE_FILES += \
         $(HOST_OUT_EXECUTABLES)/emulator$(HOST_EXECUTABLE_SUFFIX) \
-        prebuilt/android-$(TARGET_ARCH)/kernel/kernel-qemu \
+        prebuilts/qemu-kernel/$(TARGET_ARCH)/kernel-qemu \
         $(INSTALLED_RAMDISK_TARGET) \
 		$(INSTALLED_SYSTEMIMAGE) \
 		$(INSTALLED_USERDATAIMAGE_TARGET)
@@ -1574,6 +1502,7 @@ $(INTERNAL_SDK_TARGET): $(deps)
 			-I $(TARGET_COMMON_OUT_ROOT) \
 			-v "PLATFORM_NAME=android-$(PLATFORM_VERSION)" \
 			-v "OUT_DIR=$(OUT_DIR)" \
+			-v "HOST_OUT=$(HOST_OUT)" \
 			-v "TARGET_ARCH=$(TARGET_ARCH)" \
 			-v "TARGET_CPU_ABI=$(TARGET_CPU_ABI)" \
 			-v "DLL_EXTENSION=$(HOST_SHLIB_SUFFIX)" \

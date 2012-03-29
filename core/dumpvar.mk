@@ -3,7 +3,11 @@
 # what to add to the path given the config we have chosen.
 ifeq ($(CALLED_FROM_SETUP),true)
 
+ifneq ($(filter /%,$(HOST_OUT_EXECUTABLES)),)
+ABP:=$(HOST_OUT_EXECUTABLES)
+else
 ABP:=$(PWD)/$(HOST_OUT_EXECUTABLES)
+endif
 
 # Add the toolchain bin dir if it actually exists
 ifneq ($(wildcard $(PWD)/prebuilt/$(HOST_PREBUILT_TAG)/toolchain/arm-linux-androideabi-4.4.x/bin),)
@@ -38,7 +42,11 @@ ifdef dumpvar_goals
   absolute_dumpvar := $(strip $(filter abs-%,$(dumpvar_goals)))
   ifdef absolute_dumpvar
     dumpvar_goals := $(patsubst abs-%,%,$(dumpvar_goals))
-    DUMPVAR_VALUE := $(PWD)/$($(dumpvar_goals))
+    ifneq ($(filter /%,$($(dumpvar_goals))),)
+      DUMPVAR_VALUE := $($(dumpvar_goals))
+    else
+      DUMPVAR_VALUE := $(PWD)/$($(dumpvar_goals))
+    endif
     dumpvar_target := dumpvar-abs-$(dumpvar_goals)
   else
     DUMPVAR_VALUE := $($(dumpvar_goals))
@@ -59,6 +67,7 @@ endif # CALLED_FROM_SETUP
 
 
 ifneq ($(PRINT_BUILD_CONFIG),)
+HOST_OS_EXTRA:=$(shell python -c "import platform; print(platform.platform())")
 $(info ============================================)
 $(info   PLATFORM_VERSION_CODENAME=$(PLATFORM_VERSION_CODENAME))
 $(info   PLATFORM_VERSION=$(PLATFORM_VERSION))
@@ -71,7 +80,9 @@ $(info   TARGET_ARCH_VARIANT=$(TARGET_ARCH_VARIANT))
 $(info   PLATFORM_VENDOR=$(PLATFORM_VENDOR))
 $(info   HOST_ARCH=$(HOST_ARCH))
 $(info   HOST_OS=$(HOST_OS))
+$(info   HOST_OS_EXTRA=$(HOST_OS_EXTRA))
 $(info   HOST_BUILD_TYPE=$(HOST_BUILD_TYPE))
 $(info   BUILD_ID=$(BUILD_ID))
+$(info   OUT_DIR=$(OUT_DIR))
 $(info ============================================)
 endif

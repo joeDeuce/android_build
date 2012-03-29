@@ -88,8 +88,8 @@ class EdifyGenerator(object):
   def AssertDevice(self, device):
     """Assert that the device identifier is the given string."""
     cmd = ('assert(' +
-           ' || \0'.join(['getprop("ro.product.device") == "%s" || getprop("ro.build.product") == "%s"'
-                         % (i, i) for i in device.split(",")]) +
+           ' || \0'.join(['getprop("ro.product.device") == "%s" || getprop("ro.build.product") == "%s" || getprop("ro.product.board") == "%s"'
+                         % (i, i, i) for i in device.split(",")]) +
            ');')
     self.script.append(self._WordWrap(cmd))
 
@@ -100,11 +100,6 @@ class EdifyGenerator(object):
                          for b in bootloaders]) +
            ");")
     self.script.append(self._WordWrap(cmd))
-
-  def RunBackup(self, command):
-    self.script.append('package_extract_file("system/bin/backuptool.sh", "/tmp/backuptool.sh");')
-    self.script.append('set_perm(0, 0, 0777, "/tmp/backuptool.sh");')
-    self.script.append(('run_program("/tmp/backuptool.sh", "%s");' % command))
 
   def RunConfig(self, command):
     self.script.append('package_extract_file("system/bin/modelid_cfg.sh", "/tmp/modelid_cfg.sh");')
@@ -142,6 +137,15 @@ class EdifyGenerator(object):
     self.script.append('ui_print("                                                ");')
     self.script.append('ui_print("************************************************");')
     self.script.append('ui_print("************************************************");')
+
+  def WipeCache(self, command):
+    self.script.append('ui_print("wiping /cache ...");')
+    self.script.append('unmount("/cache");')
+    self.script.append('format("ext4", "EMMC", "/dev/block/mmcblk0p27", "0");')
+    self.script.append('ui_print("wiping dalvik-cache ...");')
+    self.script.append('mount("ext4", "EMMC", "/dev/block/mmcblk0p26", "/data");')
+    self.script.append('delete_recursive("/data/dalvik-cache");')
+    self.script.append('unmount("/data");')
 
   def ShowProgress(self, frac, dur):
     """Update the progress bar, advancing it over 'frac' over the next

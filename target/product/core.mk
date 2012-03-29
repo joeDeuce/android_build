@@ -32,6 +32,7 @@ PRODUCT_PACKAGES := \
     DownloadProvider \
     DownloadProviderUi \
     HTMLViewer \
+    Home \
     KeyChain \
     MediaProvider \
     PackageInstaller \
