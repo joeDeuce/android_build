@@ -415,6 +415,8 @@ def WriteFullOTAPackage(input_zip, output_zip):
   common.ZipWriteStr(output_zip, "boot.img", boot_img.data)
   script.ShowProgress(0.2, 0)
 
+  script.WelcomeText("")
+
   script.RunConfig("")
 
   script.WipeCache("")
@@ -424,7 +426,6 @@ def WriteFullOTAPackage(input_zip, output_zip):
   script.ShowProgress(0.2, 10)
   script.WriteRawImage("/boot", "boot.img")
 
-  script.WipeCache("")
 
   script.ShowProgress(0.1, 0)
   device_specific.FullOTA_InstallEnd()
