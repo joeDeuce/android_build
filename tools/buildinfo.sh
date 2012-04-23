@@ -9,7 +9,14 @@ echo "ro.build.version.incremental=$BUILD_NUMBER"
 echo "ro.build.version.sdk=$PLATFORM_SDK_VERSION"
 echo "ro.build.version.codename=$PLATFORM_VERSION_CODENAME"
 echo "ro.build.version.release=$PLATFORM_VERSION"
-echo "ro.build.date=`date`"
+
+if [ -n "$UTC_DATE_STRING" ] ; then
+  # UTC_DATE_STRING is not empty so use it for the date
+  echo "ro.build.date=${UTC_DATE_STRING}"
+else
+  # UTC_DATE_STRING is empty so just get the current UTC date
+  echo "ro.build.date=`date -u`"
+fi
 echo "ro.build.date.utc=`date +%s`"
 echo "ro.build.type=$TARGET_BUILD_TYPE"
 echo "ro.build.user=$USER"
