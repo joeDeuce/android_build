@@ -120,7 +120,7 @@ function setpaths()
     case $(get_build_var TARGET_ARCH) in
         x86) toolchaindir=x86/i686-linux-android-4.6/bin
             ;;
-        arm|*) toolchaindir=toolchain/arm-eabi-4.6.3/bin
+        arm|*) toolchaindir=toolchain/arm-eabi-4.7.1/bin
             ;;
     esac
     if [ -d "$prebuiltdir/$toolchaindir" ]; then
@@ -128,7 +128,7 @@ function setpaths()
     fi
 
     export ARM_EABI_TOOLCHAIN=
-    toolchaindir=toolchain/arm-eabi-4.6.3/bin
+    toolchaindir=toolchain/arm-eabi-4.7.1/bin
     if [ -d "$prebuiltdir/$toolchaindir" ]; then
         export ARM_EABI_TOOLCHAIN=$prebuiltdir/$toolchaindir
     fi
